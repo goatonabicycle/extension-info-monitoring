@@ -232,7 +232,7 @@ export function ExtensionMonitor() {
 					}[statusInfo.color] as 'default' | 'secondary' | 'destructive';
 
 					return (
-						<Card key={group.name} className={`border-2 ${statusColor}`}>
+						<Card key={group.name} className="border-2 border-white">
 							<CardHeader>
 								<div className="flex items-start justify-between mb-3">
 									<div>
@@ -301,35 +301,34 @@ export function ExtensionMonitor() {
 
 											if (group.submittedVersion) {
 												if (vsSubmitted === 0) {
-													status = "✅ LIVE";
-													borderClass = "border-2 border-green-500 bg-green-50 dark:bg-green-950/20";
+													status = "✓ LIVE";
+													borderClass = "";
 													textColor = "text-green-600 dark:text-green-400 font-semibold";
 												} else if (vsSubmitted < 0) {
-													// Check if also behind other live versions
 													if (vsLatest < 0) {
-														status = "🚨 SUBMISSION MISMATCH";
-														borderClass = "border-2 border-red-500 bg-red-50 dark:bg-red-950/20";
+														status = "⚠ MISMATCH";
+														borderClass = "";
 														textColor = "text-red-600 dark:text-red-400 font-bold";
 													} else {
-														status = "⏳ PENDING";
-														borderClass = "border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/20";
-														textColor = "text-blue-600 dark:text-blue-400";
+														status = "○ PENDING";
+														borderClass = "";
+														textColor = "text-blue-600 dark:text-blue-400 font-medium";
 													}
 												} else {
-													status = "🚨 SUBMISSION MISMATCH";
-													borderClass = "border-2 border-red-500 bg-red-50 dark:bg-red-950/20";
+													status = "⚠ MISMATCH";
+													borderClass = "";
 													textColor = "text-red-600 dark:text-red-400 font-bold";
 												}
 											} else {
-												status = "✅ LIVE";
-												borderClass = "border-2 border-green-500 bg-green-50 dark:bg-green-950/20";
-												textColor = "text-green-600 dark:text-green-400";
+												status = "✓ LIVE";
+												borderClass = "";
+												textColor = "text-green-600 dark:text-green-400 font-semibold";
 											}
 
 											return (
 												<tr
 													key={`${group.name}-${item.browser}`}
-													className={`${borderClass} rounded`}
+													className="border-b last:border-0"
 												>
 													<td className="py-3 px-3 font-medium">
 														<a
