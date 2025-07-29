@@ -153,7 +153,6 @@ export function ExtensionMonitor() {
 											<th className="text-left py-2 px-3">Version</th>
 											<th className="text-right py-2 px-3">Users</th>
 											<th className="text-left py-2 px-3">Updated</th>
-											<th className="text-center py-2 px-3">Link</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -173,8 +172,16 @@ export function ExtensionMonitor() {
 																: ""
 													}`}
 												>
-													<td className="py-2 px-3 font-medium capitalize">
-														{item.browser}
+													<td className="py-2 px-3 font-medium">
+														<a
+															href={item.url}
+															target="_blank"
+															rel="noopener noreferrer"
+															className="inline-flex items-center gap-1 capitalize hover:underline"
+														>
+															{item.browser}
+															<ExternalLink className="w-3 h-3" />
+														</a>
 													</td>
 													<td className="py-2 px-3">
 														<span className={`font-mono ${
@@ -189,16 +196,6 @@ export function ExtensionMonitor() {
 													</td>
 													<td className="py-2 px-3">
 														{formatDate(item.lastUpdated)}
-													</td>
-													<td className="py-2 px-3 text-center">
-														<a
-															href={item.url}
-															target="_blank"
-															rel="noopener noreferrer"
-															className="inline-flex items-center justify-center p-1 rounded hover:bg-accent"
-														>
-															<ExternalLink className="w-4 h-4" />
-														</a>
 													</td>
 												</tr>
 											);
