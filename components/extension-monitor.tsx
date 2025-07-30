@@ -34,7 +34,27 @@ const formatUsers = (users: number | string) => {
 };
 
 const formatDate = (dateString: string) => {
-	return new Date(dateString).toLocaleDateString();
+	if (!dateString) return 'Unknown';
+	const date = new Date(dateString);
+	if (isNaN(date.getTime())) return 'Unknown';
+	return date.toLocaleDateString();
+};
+
+const formatRelativeTime = (dateString: string) => {
+	if (!dateString) return 'Unknown';
+	const date = new Date(dateString);
+	if (isNaN(date.getTime())) return 'Unknown';
+	
+	const now = new Date();
+	const diffMs = now.getTime() - date.getTime();
+	const diffMinutes = Math.floor(diffMs / (1000 * 60));
+	const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+	
+	if (diffMinutes < 1) return 'Just now';
+	if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+	if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+	
+	return formatDate(dateString);
 };
 
 const getStatusInfo = (group: ExtensionGroup) => {
@@ -105,6 +125,7 @@ interface BrowserInfo {
 	lastUpdated: string;
 	users: number | string;
 	url: string;
+	lastChecked: string;
 }
 
 interface ExtensionGroup {
@@ -151,6 +172,7 @@ export function ExtensionMonitor() {
 						lastUpdated: ext.lastUpdated,
 						users: ext.users,
 						url: ext.url,
+						lastChecked: ext.lastChecked,
 					});
 				});
 			});
@@ -234,43 +256,78 @@ export function ExtensionMonitor() {
 					return (
 						<Card key={group.name} className="border-2 border-white">
 							<CardHeader>
-								<div className="flex items-start justify-between mb-3">
-									<div>
-										<CardTitle className="text-xl mb-1">{group.name}</CardTitle>
-										<div className="flex items-center gap-2">
-											<Badge variant={badgeVariant} className="text-xs font-medium">
-												{statusInfo.status.toUpperCase()}
-											</Badge>
-											<span className="text-sm text-muted-foreground">
-												{statusInfo.message}
-											</span>
+								<div className="flex items-center justify-between mb-3">
+									<div className="flex items-center gap-4">
+										<CardTitle className="text-xl">{group.name}</CardTitle>
+										<div className={`inline-flex items-center gap-2 px-2 py-1 rounded text-sm font-medium ${
+											statusInfo.color === 'red' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
+											statusInfo.color === 'orange' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' :
+											statusInfo.color === 'blue' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
+											'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+										}`}>
+											<span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+											{statusInfo.message}
 										</div>
 									</div>
+									{group.browsers.length > 0 && (
+										<div className="flex items-center gap-2 text-sm text-muted-foreground">
+											<span>Last checked:</span>
+											<span className="text-xs">
+												{formatRelativeTime(group.browsers[0].lastChecked)}
+											</span>
+										</div>
+									)}
 								</div>
 								
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-									<div>
-										<span className="text-muted-foreground">Live Version(s):</span>
-										<div className="flex flex-wrap gap-1 mt-1">
-											{[...new Set(group.browsers.map(b => b.version))].map(version => (
-												<span key={version} className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs">
-													{version}
-												</span>
-											))}
+								<div className="space-y-2">
+									<div className="flex items-center gap-4">
+										<div className="text-sm text-muted-foreground">Live:</div>
+										<div className="flex flex-wrap gap-2">
+											{[...new Set(group.browsers.map(b => b.version))].map(version => {
+												// Find a browser with this version to get its color
+												const sampleBrowser = group.browsers.find(b => b.version === version);
+												const vsSubmitted = group.submittedVersion ? 
+													compareVersions(version, group.submittedVersion) : 0;
+												const vsLatest = compareVersions(version, group.latestVersion);
+												
+												let textColor = "text-foreground";
+												if (group.submittedVersion) {
+													if (vsSubmitted === 0) {
+														textColor = "text-green-600 dark:text-green-400";
+													} else if (vsSubmitted < 0) {
+														if (vsLatest < 0) {
+															textColor = "text-red-600 dark:text-red-400";
+														} else {
+															textColor = "text-blue-600 dark:text-blue-400";
+														}
+													} else {
+														textColor = "text-red-600 dark:text-red-400";
+													}
+												} else {
+													textColor = "text-green-600 dark:text-green-400";
+												}
+												
+												return (
+													<div key={version} className="bg-muted px-2 py-1 rounded text-sm">
+														<span className={`font-mono font-medium ${textColor}`}>{version}</span>
+														<span className="text-xs text-muted-foreground ml-1">
+															({group.browsers.filter(b => b.version === version).length})
+														</span>
+													</div>
+												);
+											})}
 										</div>
 									</div>
 									
 									{group.submittedVersion && (
-										<div>
-											<span className="text-muted-foreground">Submitted:</span>
-											<div className="mt-1">
-												<span className="font-mono bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded text-xs font-medium">
-													{group.submittedVersion}
-												</span>
+										<div className="flex items-center gap-4">
+											<div className="text-sm text-muted-foreground">Submitted:</div>
+											<div className="bg-primary/10 border border-primary/20 px-2 py-1 rounded">
+												<span className="font-mono text-sm font-medium">{group.submittedVersion}</span>
 												{group.releaseDate && (
-													<div className="text-xs text-muted-foreground mt-1">
-														on {formatDate(group.releaseDate)}
-													</div>
+													<span className="text-xs text-muted-foreground ml-2">
+														({formatDate(group.releaseDate)})
+													</span>
 												)}
 											</div>
 										</div>
