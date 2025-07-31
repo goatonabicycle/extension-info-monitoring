@@ -193,24 +193,6 @@ const determineBrowserRowStatus = (browser: BrowserInfo, group: ExtensionGroup):
 	};
 };
 
-const getVersionDisplayColor = (version: string, group: ExtensionGroup): string => {
-	if (!group.submittedVersion) {
-		return "text-green-600 dark:text-green-400";
-	}
-
-	const submittedComparison = compareVersions(version, group.submittedVersion);
-	const latestComparison = compareVersions(version, group.latestVersion);
-	
-	if (submittedComparison === 0) {
-		return "text-green-600 dark:text-green-400";
-	} else if (submittedComparison < 0) {
-		return latestComparison < 0 
-			? "text-red-600 dark:text-red-400" 
-			: "text-blue-600 dark:text-blue-400";
-	} else {
-		return "text-red-600 dark:text-red-400";
-	}
-};
 
 const getStatusBadgeStyles = (statusType: StatusInfo['status']): string => {
 	const baseStyles = "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium";
@@ -310,8 +292,29 @@ const VersionBadges = ({ group }: { group: ExtensionGroup }) => {
 
 	return (
 		<div className="flex flex-wrap gap-1.5">
-			{uniqueVersions.map(version => {
-				const displayColor = getVersionDisplayColor(version, group);
+			{uniqueVersions.map(version => {				
+				let displayColor = "";
+				
+				if (!group.submittedVersion) {
+					displayColor = "text-gray-600 dark:text-gray-400";
+				} else {
+					const versionComparison = compareVersions(version, group.submittedVersion);
+					
+					if (versionComparison === 0) {						
+						displayColor = "text-green-600 dark:text-green-400";
+					} else if (versionComparison < 0) {						
+						const isSequentialUpdate = isSequentialVersionUpdate(version, group.submittedVersion);
+						
+						if (isSequentialUpdate) {							
+							displayColor = "text-blue-600 dark:text-blue-400";
+						} else {							
+							displayColor = "text-red-600 dark:text-red-400";
+						}
+					} else {						
+						displayColor = "text-red-600 dark:text-red-400";
+					}
+				}
+				
 				const browserCount = group.browsers.filter(browser => browser.version === version).length;
 				
 				return (
@@ -332,11 +335,35 @@ const VersionBadges = ({ group }: { group: ExtensionGroup }) => {
 const SubmittedVersionInfo = ({ group }: { group: ExtensionGroup }) => {
 	if (!group.submittedVersion) return null;
 
+	let extensionSlug = group.name.toLowerCase().replace(/\s+/g, '');
+	
+	const releaseTag = `${extensionSlug}-${group.submittedVersion}`;
+	const gitlabReleaseUrl = `https://gitlab.com/eyeo/browser-extensions-and-premium/extensions/extensions/-/releases/${releaseTag}`;
+	
+	const hasLiveVersion = group.browsers.some(browser => 
+		browser.version === group.submittedVersion
+	);
+	
+	const bgColorClass = hasLiveVersion 
+		? "bg-green-100 dark:bg-green-900/20" 
+		: "bg-primary/10";
+	const borderColorClass = hasLiveVersion 
+		? "border-green-300 dark:border-green-800" 
+		: "border-primary/20";
+	const textColorClass = hasLiveVersion 
+		? "text-green-700 dark:text-green-400" 
+		: "";
+
 	return (
 		<div className="flex items-center gap-3">
 			<div className="text-xs text-muted-foreground">Submitted:</div>
-			<div className="bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded">
-				<span className="font-mono text-xs font-medium">
+			<a
+				href={gitlabReleaseUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				className={`inline-flex items-center gap-1 ${bgColorClass} border ${borderColorClass} px-1.5 py-0.5 rounded hover:opacity-80 transition-opacity`}
+			>
+				<span className={`font-mono text-xs font-medium ${textColorClass}`}>
 					{group.submittedVersion}
 				</span>
 				{group.releaseDate && (
@@ -344,7 +371,8 @@ const SubmittedVersionInfo = ({ group }: { group: ExtensionGroup }) => {
 						({formatDate(group.releaseDate)})
 					</span>
 				)}
-			</div>
+				<ExternalLink className="w-2.5 h-2.5 ml-0.5" />
+			</a>
 		</div>
 	);
 };
@@ -426,7 +454,7 @@ const ExtensionCard = ({ group }: { group: ExtensionGroup }) => {
 					</div>
 					{group.browsers.length > 0 && (
 						<div className="text-xs text-muted-foreground">
-							{formatRelativeTime(group.browsers[0].lastChecked)}
+							last updated {formatRelativeTime(group.browsers[0].lastChecked)}
 						</div>
 					)}
 				</div>
