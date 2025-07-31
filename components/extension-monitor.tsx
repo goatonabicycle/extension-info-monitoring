@@ -445,7 +445,7 @@ const ExtensionCard = ({ group }: { group: ExtensionGroup }) => {
 	const statusInfo = useMemo(() => determineGroupStatus(group), [group]);
 
 	return (
-		<Card key={group.name} className="border-2 border-white">
+		<Card key={group.name} className="border-white">
 			<CardHeader>
 				<div className="flex items-center justify-between mb-3">
 					<div className="flex items-center gap-3">
