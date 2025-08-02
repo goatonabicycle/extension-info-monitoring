@@ -121,6 +121,20 @@ const formatRelativeTime = (dateString: string): string => {
 	return formatDate(dateString);
 };
 
+const formatDaysAgo = (dateString: string): string => {
+	if (!dateString) return 'Unknown';
+	const date = new Date(dateString);
+	if (isNaN(date.getTime())) return 'Unknown';
+	
+	const now = new Date();
+	const diffMs = now.getTime() - date.getTime();
+	const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+	
+	if (diffDays === 0) return 'Today';
+	if (diffDays === 1) return '1 day ago';
+	return `${diffDays} days ago`;
+};
+
 const normalizeExtensionName = (extensionName: string): string => {
 	if (extensionName.includes("Adblock Plus")) return "Adblock Plus";
 	if (extensionName.includes("AdBlock")) return "AdBlock";
@@ -383,6 +397,8 @@ const BrowserRow = ({ browser, group }: { browser: BrowserInfo; group: Extension
 		[browser, group]
 	);
 
+	const isOpera = browser.browser.toLowerCase() === 'opera';
+
 	return (
 		<tr key={`${group.name}-${browser.browser}`} className="border-b last:border-0">
 			<td className="py-2 px-2 text-xs">
@@ -407,10 +423,15 @@ const BrowserRow = ({ browser, group }: { browser: BrowserInfo; group: Extension
 				</span>
 			</td>
 			<td className="py-2 px-2 text-right text-xs">
-				{formatUserCount(browser.users)}
+				{isOpera ? '-' : formatUserCount(browser.users)}
 			</td>
 			<td className="py-2 px-2 text-xs">
-				{formatDate(browser.lastUpdated)}
+				<span 
+					title={formatDate(browser.lastUpdated)}
+					className="cursor-help"
+				>
+					{formatDaysAgo(browser.lastUpdated)}
+				</span>
 			</td>
 		</tr>
 	);
