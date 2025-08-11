@@ -113,12 +113,14 @@ const formatRelativeTime = (dateString: string): string => {
 	const diffMs = now.getTime() - date.getTime();
 	const diffMinutes = Math.floor(diffMs / (1000 * 60));
 	const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+	const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 	
 	if (diffMinutes < 1) return 'Just now';
 	if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
 	if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+	if (diffDays === 1) return '1 day ago';
 	
-	return formatDate(dateString);
+	return `${diffDays} days ago`;
 };
 
 const formatDaysAgo = (dateString: string): string => {
@@ -162,10 +164,10 @@ const determineGroupStatus = (group: ExtensionGroup): StatusInfo => {
 	});
 
 	if (hasVersionMismatch) {
-		return { status: 'mismatch', message: 'Version mismatch detected' };
+		return { status: 'mismatch', message: 'Version mismatch' };
 	}
 	
-	return { status: 'pending', message: 'Updates pending approval' };
+	return { status: 'pending', message: 'Pending approval' };
 };
 
 const determineBrowserRowStatus = (browser: BrowserInfo, group: ExtensionGroup): BrowserRowStatus => {
@@ -391,6 +393,36 @@ const SubmittedVersionInfo = ({ group }: { group: ExtensionGroup }) => {
 	);
 };
 
+const AnimatedDate = ({ dateString }: { dateString: string }) => {
+	const [isHovered, setIsHovered] = useState(false);
+
+	const relativeTime = formatDaysAgo(dateString);
+	const absoluteTime = formatDate(dateString);
+
+	return (
+		<div 
+			className="relative h-4 overflow-hidden cursor-default"
+			onMouseEnter={() => setIsHovered(true)}
+			onMouseLeave={() => setIsHovered(false)}
+		>
+			<div
+				className={`absolute inset-0 transition-all duration-300 ease-in-out ${
+					!isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'
+				}`}
+			>
+				{relativeTime}
+			</div>
+			<div
+				className={`absolute inset-0 transition-all duration-300 ease-in-out ${
+					isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
+				}`}
+			>
+				{absoluteTime}
+			</div>
+		</div>
+	);
+};
+
 const BrowserRow = ({ browser, group }: { browser: BrowserInfo; group: ExtensionGroup }) => {
 	const rowStatus = useMemo(() => 
 		determineBrowserRowStatus(browser, group), 
@@ -426,12 +458,7 @@ const BrowserRow = ({ browser, group }: { browser: BrowserInfo; group: Extension
 				{isOpera ? '-' : formatUserCount(browser.users)}
 			</td>
 			<td className="py-2 px-2 text-xs">
-				<span 
-					title={formatDate(browser.lastUpdated)}
-					className="cursor-help"
-				>
-					{formatDaysAgo(browser.lastUpdated)}
-				</span>
+				<AnimatedDate dateString={browser.lastUpdated} />
 			</td>
 		</tr>
 	);
@@ -468,13 +495,13 @@ const ExtensionCard = ({ group }: { group: ExtensionGroup }) => {
 	return (
 		<Card key={group.name} className="border-white">
 			<CardHeader>
-				<div className="flex items-center justify-between mb-3">
-					<div className="flex items-center gap-3">
+				<div className="flex items-start justify-between mb-3">
+					<div className="flex flex-wrap items-center gap-3">
 						<CardTitle className="text-lg">{group.name}</CardTitle>
 						<StatusBadge statusInfo={statusInfo} />
 					</div>
 					{group.browsers.length > 0 && (
-						<div className="text-xs text-muted-foreground">
+						<div className="text-xs text-muted-foreground whitespace-nowrap ml-3">
 							last updated {formatRelativeTime(group.browsers[0].lastChecked)}
 						</div>
 					)}
